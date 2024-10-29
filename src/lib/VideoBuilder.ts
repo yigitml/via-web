@@ -7,88 +7,192 @@ import { Transcription } from "@/types";
 
 const execAsync = promisify(exec);
 
+interface WordWindow {
+  words: Array<{
+    word: string;
+    start: number;
+    end: number;
+    isCurrent: string | boolean;
+  }>;
+  start: number;
+  end: number;
+}
+
 export class VideoBuilder {
   private readonly id: string;
   private readonly dir: string;
-  private readonly BACKGROUND_DURATION = 60; // Assuming background video is 60 seconds long
+  private readonly BACKGROUND_DURATION = 60;
+  private readonly WORD_WINDOW_TIME = 0.5;
+  private readonly MAX_WORDS_VISIBLE = 3;
+  private readonly MIN_WORDS_VISIBLE = 1;
 
   constructor(id: string) {
     this.id = id;
     this.dir = join(process.cwd(), "public", "videos", id);
   }
 
-  private generateTextFilter(word: any, index: number): string {
-    const text = word.word.replace(/'/g, "'\\''")
-                         .replace(/[\[\]]/g, '\\$&')
-                         .replace(/[\n\r]/g, ' ');
-    const start = parseFloat(word.start);
-    const end = parseFloat(word.end);
-    const prevIndex = index > 0 ? `v${index-1}` : 'bg';
-    
-    const baseConfig = `fontfile=./public/fonts/LuckiestGuy-Regular.ttf:fontcolor=white:bordercolor=black:borderw=5`;
-    
-    if ('isTitle' in word) {
-      return `[${prevIndex}]drawtext=text='${text}':${baseConfig}:fontsize='if(lt(t,${start}+0.3),120*(1+(t-${start})*0.1),if(gt(t,${end}-0.2),120*(1-(t-(${end}-0.2))*0.15),120*1.03))':x=(w-text_w)/2:y=(h/3-text_h)/2:enable='between(t,${start},${end})'[v${index}]`;
-    }
-    
-    return `[${prevIndex}]drawtext=text='${text}':${baseConfig}:fontsize='if(lt(t,${start}+0.2),90*(1+(t-${start})*0.1),if(gt(t,${end}-0.15),90*(1-(t-(${end}-0.15))*0.12),90*1.02))':x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t,${start},${end})'[v${index}]`;
-  }
-
   private getRandomStartTime(duration: number): number {
-    // Ensure we don't start too close to the end of the background video
     const maxStart = this.BACKGROUND_DURATION - duration;
     return Math.random() * maxStart;
   }
 
-  private buildFFmpegCommand(inputPath: string, outputPath: string, filterContent: string, duration: number, wordCount: number): string {
+  private calculateWordWindows(words: any[]): WordWindow[] {
+    const windows: WordWindow[] = [];
+    let currentWindow: WordWindow = {
+      words: [],
+      start: 0,
+      end: 0
+    };
+
+    for (let i = 0; i < words.length; i++) {
+      const currentWord = words[i];
+      const start = parseFloat(currentWord.start);
+      const end = parseFloat(currentWord.end);
+
+      if (
+        currentWindow.words.length === 0 ||
+        start - currentWindow.words[0].start > this.WORD_WINDOW_TIME ||
+        currentWindow.words.length >= this.MAX_WORDS_VISIBLE
+      ) {
+        if (currentWindow.words.length > 0) {
+          if (currentWindow.words.length < this.MIN_WORDS_VISIBLE && i < words.length) {
+            const nextWords = words.slice(i, i + (this.MIN_WORDS_VISIBLE - currentWindow.words.length));
+            currentWindow.words.push(...nextWords.map(w => ({
+              word: w.word,
+              start: parseFloat(w.start),
+              end: parseFloat(w.end),
+              isCurrent: false
+            })));
+          }
+          windows.push(currentWindow);
+        }
+
+        currentWindow = {
+          words: [{
+            word: currentWord.word,
+            start,
+            end,
+            isCurrent: true
+          }],
+          start,
+          end
+        };
+      } else {
+        currentWindow.words.push({
+          word: currentWord.word,
+          start,
+          end,
+          isCurrent: true
+        });
+      }
+
+      currentWindow.words.forEach(word => {
+        word.isCurrent = `between(t,${word.start},${word.end})`;
+      });
+
+      currentWindow.end = end;
+    }
+
+    if (currentWindow.words.length > 0) {
+      windows.push(currentWindow);
+    }
+
+    return windows;
+  }
+
+  private generateTextFilter(window: WordWindow, index: number): string {
+    const currentLabel = `text${index}`;
+    const prevLabel = index === 0 ? 'bg' : `text${index-1}`;
+    
+    const baseConfig = 'fontfile=./public/fonts/LuckiestGuy-Regular.ttf:bordercolor=black:borderw=5';
+    const yOffset = `(h-text_h*${window.words.length})/2`;
+    
+    const wordFilters = window.words.map((word, wordIndex) => {
+      const text = word.word.replace(/'/g, "'\\''")
+                          .replace(/[\[\]]/g, '\\$&')
+                          .replace(/[\n\r]/g, ' ');
+      
+      const enableExpr = `between(t,${window.start},${window.end})`;
+      const isCurrentExpr = word.isCurrent.toString();
+      
+      const currentWordFilter = `drawtext=text='${text}':${baseConfig}:` +
+                                `fontsize=90:x=(w-text_w)/2:` +
+                                `y=${yOffset}+${wordIndex}*120:` +
+                                `enable='${enableExpr}*${isCurrentExpr}':` +
+                                `box=1:` +
+                                `boxcolor=white@0.4:` +
+                                `boxborderw=5:` +
+                                `fontcolor=red:` +
+                                `alpha=1`;
+
+      const nonCurrentWordFilter = `drawtext=text='${text}':${baseConfig}:` +
+                                   `fontsize=90:x=(w-text_w)/2:` +
+                                   `y=${yOffset}+${wordIndex}*120:` +
+                                   `enable='${enableExpr}*not(${isCurrentExpr})':` +
+                                   `box=1:` +
+                                   `boxcolor=white@0.4:` +
+                                   `boxborderw=5:` +
+                                   `fontcolor=white:` +
+                                   `alpha=0.5`;
+
+      return `${currentWordFilter},${nonCurrentWordFilter}`;
+    });
+
+    return `[${prevLabel}]${wordFilters.join(',')}[${currentLabel}]`;
+  }
+
+  private buildFFmpegCommand(inputPath: string, outputPath: string, filterContent: string, duration: number, windowCount: number): string {
     const startTime = this.getRandomStartTime(duration);
+    const finalLabel = `text${windowCount-1}`;
     
     return `ffmpeg -y \
-      -i "${join(process.cwd(), "public", "background.mp4")}" \
-      -i "${inputPath}" \
-      -filter_complex "\
-      [0:v]scale=3413:1920,crop=1080:1920:1166:0,setpts=PTS-STARTPTS,trim=start=${startTime}:duration=${duration},setpts=PTS-STARTPTS[bg];\
-      ${filterContent}" \
-      -map "[v${wordCount-1}]" \
-      -map 1:a \
-      -c:v libx264 -preset ultrafast \
-      -c:a aac \
-      -pix_fmt yuv420p \
-      -shortest \
-      "${outputPath}"`;
+          -i "${join(process.cwd(), "public", "background.mp4")}" \
+          -i "${inputPath}" \
+          -filter_complex "\
+          [0:v]scale=3413:1920,crop=1080:1920:1166:0,setpts=PTS-STARTPTS,trim=start=${startTime}:duration=${duration},setpts=PTS-STARTPTS[bg];\
+          ${filterContent}" \
+          -map "[${finalLabel}]" \
+          -map 1:a \
+          -c:v libx264 -preset ultrafast \
+          -c:a aac \
+          -pix_fmt yuv420p \
+          -shortest \
+          "${outputPath}"`.replace(/\s+/g, ' ').trim();
   }
 
   public async build(): Promise<string> {
     if (!existsSync(this.dir)) {
-      throw new Error("Story directory not found");
+      throw new Error("Video directory not found");
     }
 
-    // Read and parse transcription
     const transcriptionPath = join(this.dir, "voiceover-1.txt");
     const transcriptionData: Transcription = JSON.parse(await readFile(transcriptionPath, "utf8"));
 
-    // Generate filter content
-    const textFilters = transcriptionData.words.map((word, index) => 
-      this.generateTextFilter(word, index)).join(';\n');
+    const windows = this.calculateWordWindows(transcriptionData.words);
 
-    // Write filter file
+    const textFilters = windows.map((window, index) => 
+      this.generateTextFilter(window, index)).join(';\n');
+
     const filterPath = join(this.dir, "filter.txt");
     await writeFile(filterPath, textFilters);
 
-    // Build and execute FFmpeg command
     const command = this.buildFFmpegCommand(
       join(this.dir, "voiceover-1.mp3"),
       join(this.dir, "final.mp4"),
       textFilters,
       parseFloat(transcriptionData.duration) + 2,
-      transcriptionData.words.length
+      windows.length
     );
 
     console.log('Executing FFmpeg command:', command);
-    const { stderr } = await execAsync(command);
-    
-    if (stderr) {
-      console.log('FFmpeg stderr:', stderr);
+    try {
+      const { stdout, stderr } = await execAsync(command);
+      console.log('FFmpeg stdout:', stdout);
+      if (stderr) {
+        console.log('FFmpeg stderr:', stderr);
+      }
+    } catch (error) {
+      console.error('FFmpeg error:', error);
     }
 
     return `/videos/${this.id}/final.mp4`;

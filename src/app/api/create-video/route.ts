@@ -14,14 +14,12 @@ export async function POST(request: Request) {
     }
 
     const generator = new VideoAssetGenerator();
-    /*
+    
     const videoId = await generator.generateVideoAssets({
       content,
       templateId,
       voiceId,
     });
-    */
-    const videoId = "vjhr5n";
 
     const videoBuilder = new VideoBuilder(videoId);
     const url = await videoBuilder.build();
