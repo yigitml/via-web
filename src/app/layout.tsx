@@ -11,7 +11,7 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: "URL to Video with AI",
+  title: "Via: Your AI Content Creator",
   description: "Convert any URL into an AI-generated video",
 }
 

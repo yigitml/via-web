@@ -46,7 +46,7 @@ export default function Home() {
   return (
     <main className="max-w-2xl mx-auto p-8 min-h-screen">
       <h1 className="text-4xl font-bold mb-12 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-light">
-        URL to Video AI
+        Via: Your AI Content Creator
       </h1>
       
       <form onSubmit={handleSubmit} className="space-y-8">

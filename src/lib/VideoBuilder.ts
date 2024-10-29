@@ -160,7 +160,7 @@ export class VideoBuilder {
       throw new Error("Video directory not found");
     }
 
-    const transcriptionPath = join(this.dir, "voiceover-1.txt");
+    const transcriptionPath = join(this.dir, "voiceover.txt");
     const transcriptionData: Transcription = JSON.parse(await readFile(transcriptionPath, "utf8"));
 
     const windows = this.calculateWordWindows(transcriptionData.words);
@@ -172,7 +172,7 @@ export class VideoBuilder {
     await writeFile(filterPath, textFilters);
 
     const command = this.buildFFmpegCommand(
-      join(this.dir, "voiceover-1.mp3"),
+      join(this.dir, "voiceover.mp3"),
       join(this.dir, "final.mp4"),
       textFilters,
       parseFloat(transcriptionData.duration) + 2,

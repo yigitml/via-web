@@ -74,7 +74,7 @@ export class VideoAssetGenerator {
         : response.audio_base64;
       
       const audioData = Buffer.from(base64Data, 'base64');
-      const audioPath = join(outputPath, 'voiceover-1.mp3');
+      const audioPath = join(outputPath, 'voiceover.mp3');
       await writeFile(audioPath, audioData);
 
       // Convert character-level timestamps to word-level timestamps
@@ -100,7 +100,7 @@ export class VideoAssetGenerator {
 
       console.debug('Writing transcription file');
       await writeFile(
-        join(outputPath, 'voiceover-1.txt'),
+        join(outputPath, 'voiceover.txt'),
         JSON.stringify(transcription, null, 2)
       );
 
