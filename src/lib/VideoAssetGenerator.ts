@@ -14,21 +14,21 @@ export class VideoAssetGenerator {
     console.info('VideoAssetGenerator initialized');
   }
 
-  private async generateTikTokStyle(text: string): Promise<{
+  private async generateShortStoryStyle(text: string): Promise<{
     title: string;
     content: string;
   }> {
     try {
       const parsed = JSON.parse(text);
-      console.debug('Successfully parsed TikTok style content', { title: parsed.title });
+      console.debug('Successfully parsed short story style content', { title: parsed.title });
       return {
         title: parsed.title || 'Untitled',
         content: parsed.content || text
       };
     } catch {
-      console.warn('Failed to parse TikTok style content, using default format');
+      console.warn('Failed to parse short story style content, using default format');
       return {
-        title: 'Tiktok Story',
+        title: 'Short Story',
         content: text
       };
     }
@@ -37,7 +37,7 @@ export class VideoAssetGenerator {
   private async generateVoiceovers(script: { text: string, voice: string, languageCode?: string }, outputPath: string) {
     try {
       console.info('Starting audio asset generation', { outputPath });
-      const { title, content } = await this.generateTikTokStyle(script.text);
+      const { title, content } = await this.generateShortStoryStyle(script.text);
       const contentText = typeof content === 'object' ? JSON.stringify(content) : content;
       
       if (!script.voice) {

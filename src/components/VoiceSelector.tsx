@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { VideoTemplate } from '@/lib/videoTemplates'
+import { VideoTemplate } from '@/lib/VideoTemplate'
 
 interface VoiceSelectorProps {
   template: VideoTemplate
@@ -23,20 +23,20 @@ export default function VoiceSelector({ template, onVoiceSelect }: VoiceSelector
 
   return (
     <div className="space-y-4">
-      <label className="block text-sm font-medium">Select Voice</label>
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">Select Voice</label>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {template.voicePresets.map((voice) => (
           <button
             key={voice.id}
             onClick={() => handleVoiceChange(voice.id)}
-            className={`p-4 rounded-lg border-2 text-left transition-colors ${
+            className={`p-4 rounded-lg border text-left transition-all duration-200 ${
               selectedVoice === voice.id
-                ? 'border-emerald-500 bg-emerald-500/10'
-                : 'border-gray-700 hover:border-gray-600'
+                ? 'border-primary bg-primary/20 shadow-lg shadow-primary/20'
+                : 'border-gray-200 dark:border-gray-800 hover:border-primary hover:bg-gray-50 dark:hover:bg-black/50'
             }`}
           >
-            <h3 className="font-medium">{voice.name}</h3>
-            <p className="text-sm text-gray-400">{voice.description}</p>
+            <h3 className="font-medium text-gray-900 dark:text-white">{voice.name}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{voice.description}</p>
           </button>
         ))}
       </div>

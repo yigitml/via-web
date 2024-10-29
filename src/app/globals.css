@@ -2,7 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background: linear-gradient(rgb(7, 57, 64) 0%, black 40%), #000;
-  @apply text-white min-h-dvh;
+:root {
+  --primary: #133E87;
+  --primary-light: #1a4fa8;
+  --primary-dark: #0c2654;
+}
+
+.dark {
+  --primary: #1a4fa8;
+  --primary-light: #2561c9;
+  --primary-dark: #133E87;
 }

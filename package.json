@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.1.5",
     "axios": "^1.7.7",
     "ffmpeg-static": "^5.2.0",
     "fluent-ffmpeg": "^2.1.3",

@@ -110,7 +110,8 @@ export class VideoBuilder {
     const wordFilters = window.words.map((word, wordIndex) => {
       const text = word.word.replace(/'/g, "'\\''")
                           .replace(/[\[\]]/g, '\\$&')
-                          .replace(/[\n\r]/g, ' ');
+                          .replace(/[\n\r]/g, ' ')
+                          .toUpperCase();
       
       const enableExpr = `between(t,${window.start},${window.end})`;
       const isCurrentExpr = word.isCurrent.toString();
@@ -119,9 +120,6 @@ export class VideoBuilder {
                                 `fontsize=90:x=(w-text_w)/2:` +
                                 `y=${yOffset}+${wordIndex}*120:` +
                                 `enable='${enableExpr}*${isCurrentExpr}':` +
-                                `box=1:` +
-                                `boxcolor=white@0.4:` +
-                                `boxborderw=5:` +
                                 `fontcolor=red:` +
                                 `alpha=1`;
 
@@ -129,9 +127,6 @@ export class VideoBuilder {
                                    `fontsize=90:x=(w-text_w)/2:` +
                                    `y=${yOffset}+${wordIndex}*120:` +
                                    `enable='${enableExpr}*not(${isCurrentExpr})':` +
-                                   `box=1:` +
-                                   `boxcolor=white@0.8:` +
-                                   `boxborderw=5:` +
                                    `fontcolor=white:` +
                                    `alpha=1`;
 
@@ -184,10 +179,8 @@ export class VideoBuilder {
       windows.length
     );
 
-    console.log('Executing FFmpeg command:', command);
     try {
-      const { stdout, stderr } = await execAsync(command);
-      console.log('FFmpeg stdout:', stdout);
+      const { stderr } = await execAsync(command);
       if (stderr) {
         console.log('FFmpeg stderr:', stderr);
       }
