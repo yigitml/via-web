@@ -27,15 +27,15 @@ export const videoTemplates: VideoTemplate[] = [
     voicePresets: [
       {
         id: 'MIyORLtrtKBPcRoq8h51',
-        name: 'Female',
-        description: 'A female voice with a British accent',
+        name: 'Natasha',
+        description: 'A valley girl female voice. Great for shorts.',
         languageCode: 'en'
       },
       {
-        id: 'MIyORLtrtKBPcRoq8h52',
-        name: 'Sultan',
-        description: '',
-        languageCode: 'tr'
+        id: 'u6aeqVRWb4h0VkhpUkLL',
+        name: 'Bria',
+        description: 'A young female with a softly spoken tone, perfect for storytelling or ASMR.',
+        languageCode: 'en'
       }
     ],
     style: {
@@ -44,7 +44,7 @@ export const videoTemplates: VideoTemplate[] = [
       fontFamily: 'Arial',
       titleAnimation: 'fade' // or 'slide', 'zoom'
     },
-    promptTemplate: `Create a short, engaging story that can be told in under 60 seconds. 
+    promptTemplate: `Create a short video, engaging story that can interest and intrigue the viewer. 
     Format the response as a JSON object with:
     {
       "title": "The main hook or question",

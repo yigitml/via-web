@@ -130,10 +130,10 @@ export class VideoBuilder {
                                    `y=${yOffset}+${wordIndex}*120:` +
                                    `enable='${enableExpr}*not(${isCurrentExpr})':` +
                                    `box=1:` +
-                                   `boxcolor=white@0.4:` +
+                                   `boxcolor=white@0.8:` +
                                    `boxborderw=5:` +
                                    `fontcolor=white:` +
-                                   `alpha=0.5`;
+                                   `alpha=1`;
 
       return `${currentWordFilter},${nonCurrentWordFilter}`;
     });
@@ -148,8 +148,8 @@ export class VideoBuilder {
     return `ffmpeg -y \
           -i "${join(process.cwd(), "public", "background.mp4")}" \
           -i "${inputPath}" \
-          -filter_complex "\
-          [0:v]scale=3413:1920,crop=1080:1920:1166:0,setpts=PTS-STARTPTS,trim=start=${startTime}:duration=${duration},setpts=PTS-STARTPTS[bg];\
+          -filter_complex \
+          "[0:v]scale=3413:1920,crop=1080:1920:1166:0,setpts=PTS-STARTPTS,trim=start=${startTime}:duration=${duration},setpts=PTS-STARTPTS[bg];\
           ${filterContent}" \
           -map "[${finalLabel}]" \
           -map 1:a \
